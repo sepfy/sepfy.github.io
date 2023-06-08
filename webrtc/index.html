@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/mqtt@4.1.0/dist/mqtt.min.js"></script>
+
+    <title>WebRTC</title>
+  </head>
+  <body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Pear Demo</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link active" href="https://github.com/sepfy/pear">Github</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="https://ko-fi.com/sepfy95">Sponsor</a>
+        </li>
+      </ul>
+
+    </div>
+  </div>
+</nav>
+
+<br>
+<div class="d-flex justify-content-center">
+  <div class="card" style="width: 640px; max-height: 580px">
+    <div id="remote" style="height:max-480px;" class="card-img-top">
+    </div>
+    <div class="card-body border">
+      <h5 class="card-title" id="device-id"></h5>
+      <p class="card-text" id="status">closed</p>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+const deviceId = urlParams.get('deviceId');
+var mediaStream = new MediaStream();
+console.log(deviceId);
+
+document.getElementById('device-id').innerHTML = deviceId;
+
+const client  = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt')
+
+var pc = new RTCPeerConnection({
+  iceServers: [
+    {
+      urls: "stun:142.250.21.127:19302",
+    },
+  ],
+});
+
+const datachannel = pc.createDataChannel('pear')
+
+const log = msg => {
+  console.log(msg)
+}
+
+pc.ontrack = function (event) {
+
+  var streamElement = document.getElementById('stream');
+
+  var hasVideoTrack = false;
+
+  const receivers = pc.getReceivers();
+
+  receivers.forEach(receiver => {
+
+    const track = receiver.track;
+
+    if (track) {
+      if (track.kind === 'audio') {
+
+      } else if (track.kind === 'video') {
+        hasVideoTrack = true;
+      }
+    }
+  });
+
+  mediaStream.addTrack(event.track);
+
+  if (streamElement == null) {
+
+    if (hasVideoTrack) {
+
+      streamElement = document.createElement('video');
+
+    } else {
+
+      streamElement = document.createElement('audio');
+    }
+
+    document.getElementById('remote').appendChild(streamElement);
+    streamElement.id = 'stream';
+    streamElement.style = "height:100%; width:100%";
+  }
+
+  streamElement.srcObject = mediaStream;
+  streamElement.autoplay = true
+  streamElement.controls = true
+  streamElement.muted = true
+}
+
+pc.oniceconnectionstatechange = e => {
+
+  log(pc.iceConnectionState)
+  document.getElementById('status').innerHTML = pc.iceConnectionState;
+}
+
+pc.ondatachannel = () => {
+  console.log('ondatachannel');
+}
+
+datachannel.onclose = () => console.log('datachannel has closed');
+datachannel.onopen = () => console.log('datachannel has opened');
+
+datachannel.onmessage = e => {
+
+  if (e.data.byteLength === undefined) {
+
+    console.log(e.data);
+
+  } else {
+
+    // is binary data. mjpeg stream
+    var arrayBufferView = new Uint8Array(e.data);
+    var blob = new Blob( [ arrayBufferView ], { type: "image/jpeg" } );
+    var urlCreator = window.URL || window.webkitURL;
+    var imageUrl = urlCreator.createObjectURL( blob );
+  
+    var imageElement = document.getElementById('imgStream');
+
+    if (imageElement == null) {
+
+      imageElement = document.createElement("img");
+      document.getElementById('remote').appendChild(imageElement);
+      imageElement.id = "imgStream";
+      imageElement.style = "height:100%; width:100%";
+    }
+    imageElement.src = imageUrl;
+
+  }  
+}
+
+pc.onicecandidate = event => {
+  if (event.candidate === null) {
+    console.log(pc.localDescription.sdp)
+    let json = {
+     jsonrpc: '2.0',
+     method: 'response_answer',
+     params: btoa(pc.localDescription.sdp),
+     id: 2,
+    }
+    console.log(json)
+    client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify(json)
+   )
+  }
+}
+
+client.on('connect', function () {
+  console.log("connected")
+  client.subscribe('webrtc/' + deviceId + '/jsonrpc-reply', function (err) {
+    if (!err) {
+      client.publish('presence', 'Hello mqtt')
+    }
+  })
+
+  console.log('publish to webrtc/' + deviceId + '/jsonrpc')
+  client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify({
+   jsonrpc: '2.0',
+   method: 'request_offer',
+   id: 1,
+  }))
+
+})
+
+client.on('message', function (topic, message) {
+
+  let msg = JSON.parse(message.toString())
+  if (msg.id == 1) {
+
+    let sdp = atob(msg.result);
+    let offer = {type: 'offer', sdp: sdp};
+
+    log(offer)
+    pc.setRemoteDescription(offer);
+
+    pc.createAnswer().then(d => pc.setLocalDescription(d)).catch(log)
+
+  } else if (msg.id == 2) {
+
+    log('receive answer ok')
+  } 
+
+})
+
+</script>
+
+
+  </body>
+</html>
