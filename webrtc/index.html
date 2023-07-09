@@ -35,15 +35,35 @@
 </nav>
 
 <br>
+
 <div class="d-flex justify-content-center">
-  <div class="card" style="width: 640px; max-height: 580px">
-    <div id="remote" style="height:max-480px;" class="card-img-top">
-    </div>
-    <div class="card-body border">
-      <h5 class="card-title" id="device-id"></h5>
-      <p class="card-text" id="status">closed</p>
+
+  <div style="display: none" id="video">
+    <div style="width: 640px; max-height: 580px" style="display: none" id="video">
+
+      <div class="alert alert-secondary" role="alert">
+        <span id="device-id"></span>：<span id="status">waiting</span>
+      </div>
+      <div id="remote" style="height:max-480px;">
+      </div>
+
     </div>
   </div>
+
+  <div style="display: block;" id="getting-started">
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" placeholder="Your device ID" aria-label="Example text with button addon" aria-describedby="button-addon1" id="device-id-input">
+      <button class="btn btn-outline-secondary" type="button" id="button-addon1" onclick="connect()">Connect</button>
+    </div>
+<br>
+<br>
+<br>
+<br>
+    <div class="d-flex justify-content-center">
+    <a href="https://github.com/sepfy/pear" class="link-secondary">No device ID? Getting Started</button>
+  </div>
+  </div>
+
 </div>
 
 <script>
@@ -57,6 +77,24 @@ console.log(deviceId);
 document.getElementById('device-id').innerHTML = deviceId;
 
 const client  = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt')
+
+window.onload = function() {
+
+  if (deviceId != undefined) {
+
+    document.getElementById('video').style.display = 'block';
+    document.getElementById('getting-started').style.display = 'none';
+  } 
+
+}
+
+function connect() {
+
+  window.location.href = window.location.href + "?deviceId=" + document.getElementById('device-id-input').value;
+}
+
+var offerId = Math.floor((Math.random() * 1000) + 1);
+var answerId = Math.floor((Math.random() * 1000) + 1);
 
 var pc = new RTCPeerConnection({
   iceServers: [
@@ -139,6 +177,7 @@ datachannel.onmessage = e => {
   } else {
 
     // is binary data. mjpeg stream
+    console.log(e.data.byteLength);
     var arrayBufferView = new Uint8Array(e.data);
     var blob = new Blob( [ arrayBufferView ], { type: "image/jpeg" } );
     var urlCreator = window.URL || window.webkitURL;
@@ -158,6 +197,9 @@ datachannel.onmessage = e => {
   }  
 }
 
+//log(e.data);
+
+
 pc.onicecandidate = event => {
   if (event.candidate === null) {
     console.log(pc.localDescription.sdp)
@@ -165,7 +207,7 @@ pc.onicecandidate = event => {
      jsonrpc: '2.0',
      method: 'response_answer',
      params: btoa(pc.localDescription.sdp),
-     id: 2,
+     id: answerId,
     }
     console.log(json)
     client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify(json)
@@ -185,7 +227,7 @@ client.on('connect', function () {
   client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify({
    jsonrpc: '2.0',
    method: 'request_offer',
-   id: 1,
+   id: offerId,
   }))
 
 })
@@ -193,7 +235,7 @@ client.on('connect', function () {
 client.on('message', function (topic, message) {
 
   let msg = JSON.parse(message.toString())
-  if (msg.id == 1) {
+  if (msg.id == offerId) {
 
     let sdp = atob(msg.result);
     let offer = {type: 'offer', sdp: sdp};
@@ -203,7 +245,7 @@ client.on('message', function (topic, message) {
 
     pc.createAnswer().then(d => pc.setLocalDescription(d)).catch(log)
 
-  } else if (msg.id == 2) {
+  } else if (msg.id == answerId) {
 
     log('receive answer ok')
   } 
