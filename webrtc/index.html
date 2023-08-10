@@ -1,69 +1,190 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/mqtt@4.1.0/dist/mqtt.min.js"></script>
+  <script src="https://kit.fontawesome.com/8c8bbe3334.js" crossorigin="anonymous"></script>
+  <title>WebRTC</title>
+<style>
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/mqtt@4.1.0/dist/mqtt.min.js"></script>
+html {
+  font-family:"Calibri", sans-serif;
+  box-sizing: border-box;
+}
 
-    <title>WebRTC</title>
-  </head>
-  <body>
+*, *:before, *:after {
+  box-sizing: inherit;
+}
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Pear Demo</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link active" href="https://github.com/sepfy/pear">Github</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="https://ko-fi.com/sepfy95">Sponsor</a>
-        </li>
-      </ul>
+.column {
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  margin-bottom: 16px;
+  margin-top: 8px;
+  padding: 0 8px;
+}
 
-    </div>
-  </div>
-</nav>
+@media screen and (max-width: 650px) {
+  .column {
+    width: 100%;
+    display: block;
+  }
+}
 
-<br>
+.card {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
 
-<div class="d-flex justify-content-center">
+.container {
+  position: relative;
+  text-align: center;
+  color: white;
+}
 
-  <div style="display: none" id="video">
-    <div style="width: 640px; max-height: 580px" style="display: none" id="video">
+.title {
+  color: grey;
+}
 
-      <div class="alert alert-secondary" role="alert">
-        <span id="device-id"></span>：<span id="status">waiting</span>
+.bottom-left {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+}
+
+.top-left {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+}
+
+.top-right {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+}
+
+.bottom-right {
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+}
+
+.button {
+  border: none;
+  outline: 0;
+  display: inline-block;
+  padding: 8px;
+  color: white;
+  background-color: #000;
+  text-align: center;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #555;
+}
+
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: #04AA6D;
+  color: white;
+}
+
+.topnav .icon {
+  display: none;
+}
+
+.btn-group button {
+  margin-top: -4px;
+  background-color: white; /* Green background */
+  border: 1px solid white; /* Green border */
+  color: black; /* White text */
+  padding: 10px 24px; /* Some padding */
+  cursor: pointer; /* Pointer/hand icon */
+  float: left; /* Float the buttons side by side */
+}
+
+/* Clear floats (clearfix hack) */
+.btn-group:after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+.btn {
+  background-color: DodgerBlue;
+  border: none;
+  color: white;
+  padding: 12px 16px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Darker background on mouse-over */
+.btn:hover {
+  background-color: RoyalBlue;
+}
+
+.btn-group button:not(:last-child) {
+  border-right: none; /* Prevent double borders */
+}
+
+/* Add a background color on hover */
+.btn-group button:hover {
+  background-color: #f2f2f2;
+}
+
+</style>
+</head>
+<body>
+
+<div class="topnav" id="myTopnav">
+  <a href="#">Peer Project</a>
+  <a href="https://ko-fi.com/sepfy95" style="float: right">Sponsor</a>
+  <a href="https://github.com/sepfy/pear" style="float: right">Github</a>
+</div>
+
+<div class="column" id="video">
+  <div class="card">
+    <div class="container">
+      <img id="imgStream" style="width: 100%">
+      <video id="videoStream" style="width:100%; display: none"></video>
+      <audio id="audioStream" style="display: none"></audio>
+        <p class="top-left" id="device-id"></p>
+        <p class="top-right" id="status">waiting</p>
       </div>
-      <div id="remote" style="height:max-480px;">
-      </div>
+    <div class="btn-group" style="width:100%">
+      <button style="width:33%" class="btn" onclick="onVolume()"><i id="volume-icon" class="fa-solid fa-volume-xmark"></i></button>
+      <button style="width:34%" class="btn" onclick="onMuted()"><i id="mute-icon" class="fa-solid fa-microphone-slash"></i></button>
+      <button style="width:33%" class="btn" onclick="onRotate()"><i class="fa-solid fa-arrows-rotate"></i></button>
 
     </div>
   </div>
+</div>
+ 
 
-  <div style="display: block;" id="getting-started">
-    <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Your device ID" aria-label="Example text with button addon" aria-describedby="button-addon1" id="device-id-input">
-      <button class="btn btn-outline-secondary" type="button" id="button-addon1" onclick="connect()">Connect</button>
-    </div>
-<br>
-<br>
-<br>
-<br>
-    <div class="d-flex justify-content-center">
-    <a href="https://github.com/sepfy/pear" class="link-secondary">No device ID? Getting Started</button>
-  </div>
-  </div>
-
+<div style="display: block;" id="getting-started">
 </div>
 
 <script>
@@ -71,7 +192,6 @@
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const deviceId = urlParams.get('deviceId');
-var mediaStream = new MediaStream();
 console.log(deviceId);
 
 document.getElementById('device-id').innerHTML = deviceId;
@@ -80,12 +200,24 @@ const client  = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt')
 
 window.onload = function() {
 
-  if (deviceId != undefined) {
+  if (deviceId == undefined) {
 
-    document.getElementById('video').style.display = 'block';
-    document.getElementById('getting-started').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('getting-started').style.display = 'block';
   } 
 
+  const canvas = document.createElement('canvas')
+  canvas.width = 640
+  canvas.height = 480
+  
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = 'rgba(200, 200, 200, 100)'
+  ctx.fillRect(0, 0, 640, 480)
+
+  const img = new Image(640, 480)
+  img.src = canvas.toDataURL()
+
+  document.getElementById('imgStream').src = img.src;
 }
 
 function connect() {
@@ -93,6 +225,8 @@ function connect() {
   window.location.href = window.location.href + "?deviceId=" + document.getElementById('device-id-input').value;
 }
 
+var hasVolume = false;
+var isMuted = false;
 var offerId = Math.floor((Math.random() * 1000) + 1);
 var answerId = Math.floor((Math.random() * 1000) + 1);
 
@@ -110,55 +244,119 @@ const log = msg => {
   console.log(msg)
 }
 
-pc.ontrack = function (event) {
+// Request mic access
+navigator.mediaDevices.getUserMedia({ video: false, audio: true })
+  .then(stream => {
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+}).catch(log);
 
-  var streamElement = document.getElementById('stream');
+function onVolume() {
 
-  var hasVideoTrack = false;
+  var audioStream = document.getElementById('audioStream');
+  hasVolume = !hasVolume;
 
-  const receivers = pc.getReceivers();
+  if (hasVolume) {
 
-  receivers.forEach(receiver => {
+     audioStream.play();
+     document.getElementById('volume-icon').className = 'fa-solid fa-volume-high';
 
-    const track = receiver.track;
+  } else {
 
-    if (track) {
-      if (track.kind === 'audio') {
-
-      } else if (track.kind === 'video') {
-        hasVideoTrack = true;
-      }
-    }
-  });
-
-  mediaStream.addTrack(event.track);
-
-  if (streamElement == null) {
-
-    if (hasVideoTrack) {
-
-      streamElement = document.createElement('video');
-
-    } else {
-
-      streamElement = document.createElement('audio');
-    }
-
-    document.getElementById('remote').appendChild(streamElement);
-    streamElement.id = 'stream';
-    streamElement.style = "height:100%; width:100%";
+     audioStream.pause();
+     document.getElementById('volume-icon').className = 'fa-solid fa-volume-xmark';
   }
 
-  streamElement.srcObject = mediaStream;
-  streamElement.autoplay = true
-  streamElement.controls = true
-  streamElement.muted = true
+}
+
+var rotate = 0;
+
+function onRotate() {
+
+  rotate = rotate + 180;
+
+  if (rotate == 360) {
+    rotate = 0;
+  }
+
+  document.getElementById('imgStream').style.transform = 'rotate(' + rotate + 'deg)';
+  document.getElementById('videoStream').style.transform = 'rotate(' + rotate + 'deg)';
+
+}
+
+function onMuted() {
+
+  isMuted = !isMuted;
+
+  if (isMuted) {
+
+     document.getElementById('mute-icon').className = 'fa-solid fa-microphone-slash';
+
+     pc.getSenders().forEach(function (sender) {
+
+       // stop audio track
+       if (sender.track != null && sender.track.kind == 'audio') {
+         sender.track.stop();
+       }
+
+     })
+
+  } else {
+
+     document.getElementById('mute-icon').className = 'fa-solid fa-microphone';
+
+     // access mic again
+     navigator.mediaDevices.getUserMedia({ video: false, audio: true })
+       .then(stream => {
+         stream.getTracks().forEach(track => {
+           pc.getSenders().forEach(function (sender) {
+             if (sender.track != null && sender.track.kind == 'audio') {
+               sender.replaceTrack(track);
+             }
+           })
+         });
+       }).catch(log);
+  }
+
+}
+
+pc.ontrack = function (event) {
+
+
+  if (event.track.kind == 'video') {
+
+    var el = document.getElementById('videoStream');
+    var newStream = new MediaStream();
+    newStream.addTrack(event.track);
+    el.srcObject = newStream;
+    el.autoplay = true
+    el.controls = false
+    el.muted = true
+    document.getElementById('imgStream').style.display = 'none';  
+    document.getElementById('videoStream').style.display = 'block';
+
+  } else if (event.track.kind == 'audio') {
+
+    var el = document.getElementById('audioStream');
+    var newStream = new MediaStream();
+    newStream.addTrack(event.track);
+    el.srcObject = newStream;
+    el.controls = false 
+    el.muted = false
+
+  }
+
+
 }
 
 pc.oniceconnectionstatechange = e => {
 
   log(pc.iceConnectionState)
   document.getElementById('status').innerHTML = pc.iceConnectionState;
+  if (pc.iceConnectionState == 'connected') {
+    // default to muted
+    if (!isMuted)
+      onMuted();
+  }
 }
 
 pc.ondatachannel = () => {
@@ -166,7 +364,14 @@ pc.ondatachannel = () => {
 }
 
 datachannel.onclose = () => console.log('datachannel has closed');
-datachannel.onopen = () => console.log('datachannel has opened');
+datachannel.onopen = () => {
+  console.log('datachannel has opened');
+  console.log('sending ping');
+  setInterval(() => {
+    console.log('sending ping');
+    datachannel.send('ping');
+  }, 1000);
+}
 
 datachannel.onmessage = e => {
 
@@ -177,23 +382,14 @@ datachannel.onmessage = e => {
   } else {
 
     // is binary data. mjpeg stream
-    console.log(e.data.byteLength);
+    //console.log(e.data.byteLength);
     var arrayBufferView = new Uint8Array(e.data);
     var blob = new Blob( [ arrayBufferView ], { type: "image/jpeg" } );
     var urlCreator = window.URL || window.webkitURL;
     var imageUrl = urlCreator.createObjectURL( blob );
   
     var imageElement = document.getElementById('imgStream');
-
-    if (imageElement == null) {
-
-      imageElement = document.createElement("img");
-      document.getElementById('remote').appendChild(imageElement);
-      imageElement.id = "imgStream";
-      imageElement.style = "height:100%; width:100%";
-    }
     imageElement.src = imageUrl;
-
   }  
 }
 
