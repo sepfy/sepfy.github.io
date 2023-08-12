@@ -401,7 +401,7 @@ pc.onicecandidate = event => {
     console.log(pc.localDescription.sdp)
     let json = {
      jsonrpc: '2.0',
-     method: 'response_answer',
+     method: 'PEER_ANSWER',
      params: btoa(pc.localDescription.sdp),
      id: answerId,
     }
@@ -422,7 +422,7 @@ client.on('connect', function () {
   console.log('publish to webrtc/' + deviceId + '/jsonrpc')
   client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify({
    jsonrpc: '2.0',
-   method: 'request_offer',
+   method: 'PEER_OFFER',
    id: offerId,
   }))
 
