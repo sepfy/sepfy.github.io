@@ -164,12 +164,11 @@ html {
   <a href="https://ko-fi.com/sepfy95" style="float: right">Sponsor</a>
   <a href="https://github.com/sepfy/pear" style="float: right">Github</a>
 </div>
-
 <div class="column" id="video">
   <div class="card">
     <div class="container">
       <img id="imgStream" style="width: 100%">
-      <video id="videoStream" style="width:100%; display: none"></video>
+      <video id="videoStream" playsinline style="width:100%; display: none"></video>
       <audio id="audioStream" style="display: none"></audio>
         <p class="top-left" id="device-id"></p>
         <p class="top-right" id="status">waiting</p>
@@ -186,6 +185,8 @@ html {
 
 <div style="display: block;" id="getting-started">
 </div>
+
+<div id="stats-box"></div>
 
 <script>
 
@@ -321,7 +322,6 @@ function onMuted() {
 
 pc.ontrack = function (event) {
 
-
   if (event.track.kind == 'video') {
 
     var el = document.getElementById('videoStream');
@@ -344,8 +344,6 @@ pc.ontrack = function (event) {
     el.muted = false
 
   }
-
-
 }
 
 pc.oniceconnectionstatechange = e => {
@@ -406,8 +404,36 @@ pc.onicecandidate = event => {
      id: answerId,
     }
     console.log(json)
-    client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify(json)
-   )
+    client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify(json))
+
+
+    setInterval(() => {
+
+      pc.getStats(null).then((stats) => {
+        let statsOutput = "";
+
+        stats.forEach((report) => {
+          statsOutput +=
+            `<h2>Report: ${report.type}</h2>\n<strong>ID:</strong> ${report.id}<br>\n` +
+            `<strong>Timestamp:</strong> ${report.timestamp}<br>\n`;
+          // Now the statistics for this report; we intentionally drop the ones we
+          // sorted to the top above
+
+          Object.keys(report).forEach((statName) => {
+            if (
+              statName !== "id" &&
+              statName !== "timestamp" &&
+              statName !== "type"
+            ) {
+              statsOutput += `<strong>${statName}:</strong> ${report[statName]}<br>\n`;
+            }
+          });
+        });
+
+        document.getElementById("stats-box").innerHTML = statsOutput;
+      });
+    }, 1000);
+
   }
 }
 
