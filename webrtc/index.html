@@ -174,9 +174,10 @@ html {
         <p class="top-right" id="status">waiting</p>
       </div>
     <div class="btn-group" style="width:100%">
-      <button style="width:33%" class="btn" onclick="onVolume()"><i id="volume-icon" class="fa-solid fa-volume-xmark"></i></button>
-      <button style="width:34%" class="btn" onclick="onMuted()"><i id="mute-icon" class="fa-solid fa-microphone-slash"></i></button>
-      <button style="width:33%" class="btn" onclick="onRotate()"><i class="fa-solid fa-arrows-rotate"></i></button>
+      <button style="width:25%" class="btn" onclick="onVolume()"><i id="volume-icon" class="fa-solid fa-volume-xmark"></i></button>
+      <button style="width:25%" class="btn" onclick="onMuted()"><i id="mute-icon" class="fa-solid fa-microphone-slash"></i></button>
+      <button style="width:25%" class="btn" onclick="onRotate()"><i class="fa-solid fa-arrows-rotate"></i></button>
+      <button style="width:25%" class="btn" onclick="onStop()"><i id="stop-icon" class="fa-solid fa-circle-stop"></i></button>
 
     </div>
   </div>
@@ -197,7 +198,13 @@ console.log(deviceId);
 
 document.getElementById('device-id').innerHTML = deviceId;
 
-const client  = mqtt.connect('wss://mqtt.eclipseprojects.io:443/mqtt')
+var options = {
+  keepalive: 600,
+}
+
+const client  = mqtt.connect('wss://test.mosquitto.org:8081/mqtt')
+
+
 
 window.onload = function() {
 
@@ -230,11 +237,12 @@ var hasVolume = false;
 var isMuted = false;
 var offerId = Math.floor((Math.random() * 1000) + 1);
 var answerId = Math.floor((Math.random() * 1000) + 1);
+var closeId = Math.floor((Math.random() * 1000) + 1);
 
 var pc = new RTCPeerConnection({
   iceServers: [
     {
-      urls: "stun:142.250.21.127:19302",
+      urls: "stun:stun.l.google.com:19302",
     },
   ],
 });
@@ -267,6 +275,27 @@ function onVolume() {
      document.getElementById('volume-icon').className = 'fa-solid fa-volume-xmark';
   }
 
+}
+
+var isPlaying = true;
+
+function onStop() {
+
+  isPlaying = !isPlaying;
+
+  if (isPlaying) {
+
+     document.getElementById('stop-icon').className = 'fa-solid fa-circle-stop';
+  } else {
+
+     client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify({
+       jsonrpc: '2.0',
+       method: 'close',
+       id: closeId,
+      }))
+
+     document.getElementById('stop-icon').className = 'fa-solid fa-circle-play';
+  }
 }
 
 var rotate = 0;
@@ -399,13 +428,12 @@ pc.onicecandidate = event => {
     console.log(pc.localDescription.sdp)
     let json = {
      jsonrpc: '2.0',
-     method: 'PEER_ANSWER',
-     params: btoa(pc.localDescription.sdp),
+     method: 'answer',
+     params: pc.localDescription.sdp,
      id: answerId,
     }
     console.log(json)
     client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify(json))
-
 
     setInterval(() => {
 
@@ -441,16 +469,15 @@ client.on('connect', function () {
   console.log("connected")
   client.subscribe('webrtc/' + deviceId + '/jsonrpc-reply', function (err) {
     if (!err) {
-      client.publish('presence', 'Hello mqtt')
     }
   })
 
   console.log('publish to webrtc/' + deviceId + '/jsonrpc')
   client.publish('webrtc/' + deviceId + '/jsonrpc', JSON.stringify({
    jsonrpc: '2.0',
-   method: 'PEER_OFFER',
+   method: 'offer',
    id: offerId,
-  }))
+  }), {qos: 2})
 
 })
 
@@ -459,12 +486,11 @@ client.on('message', function (topic, message) {
   let msg = JSON.parse(message.toString())
   if (msg.id == offerId) {
 
-    let sdp = atob(msg.result);
+    let sdp = msg.result;
     let offer = {type: 'offer', sdp: sdp};
 
     log(offer)
     pc.setRemoteDescription(offer);
-
     pc.createAnswer().then(d => pc.setLocalDescription(d)).catch(log)
 
   } else if (msg.id == answerId) {
