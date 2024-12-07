@@ -20,10 +20,10 @@
     <div class="collapse navbar-collapse" id="navbarColor03">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="#">Github</a>
+          <a class="nav-link" href="https://github.com/sepfy/libpeer">Github</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#">Sponsor</a>
+          <a class="nav-link" href="https://ko-fi.com/sepfy95">Sponsor</a>
         </li>
       </ul>
     </div>
@@ -84,8 +84,8 @@
 const queryString = window.location.search
 const urlParams = new URLSearchParams(queryString)
 const deviceId = urlParams.get("id")
-const resultTopic = "public/" + deviceId + "/result"
-const invokeTopic = "public/" + deviceId + "/invoke"
+const resultTopic = "/public/" + deviceId + "/result"
+const invokeTopic = "/public/" + deviceId + "/invoke"
 const client  = mqtt.connect('wss://libpeer.com:8084/mqtt')
 
 function getRandomItem(array) {
