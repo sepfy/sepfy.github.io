@@ -35,10 +35,18 @@
         <div class="col-1">
           <p class="h5 mb-0">URL:</p>
         </div>
-        <div class="col-9">
+        <div class="col-7">
           <p class="h5 mb-0" id="device-url"></p>
         </div>
-        <div class="col-2">
+        <div class="col-3 d-flex align-items-center gap-4">
+	  <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="camera-switch">
+            <label class="form-check-label" for="switch1">Camera</label>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="microphone-switch">
+            <label class="form-check-label" for="switch2">Microphone</label>
+        </div>
           <button class="btn btn-outline-dark" id="connect">Connect</button>
         </div>
       </div>
@@ -138,13 +146,7 @@ var pc = new RTCPeerConnection({
 });
 
 const datachannel = pc.createDataChannel("libpeer")
-/*
-// Request mic access
-navigator.mediaDevices.getUserMedia({ video: false, audio: true })
-  .then(stream => {
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
-});
-*/
+
 pc.ontrack = (e) => {
 
   if (e.track.kind == "video") {
@@ -245,6 +247,22 @@ client.on('connect', () => {
 })
 
 document.getElementById("connect").addEventListener("click", () => {
+
+  const cameraSwitch = document.getElementById("camera-switch");
+  const microphoneSwitch = document.getElementById("microphone-switch");
+  const constraints = {
+    video: cameraSwitch.checked,
+    audio: microphoneSwitch.checked,
+  }
+
+  if (constraints.video || constraints.audio) {
+    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    }).catch((e) => {
+      alert(e)
+    });
+  }
+
   client.publish(invokeTopic, JSON.stringify({
     jsonrpc: "2.0",
     method: "offer",
