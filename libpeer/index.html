@@ -63,9 +63,10 @@
       <div class="col-md-6">
         <div class="p-3 border bg-light text-center">
           <h5>Video</h5>
-          <video controls id="video-stream" class="w-100" style="max-height: 400px;">
+          <video controls id="video-stream" class="w-100" style="max-height: 400px; display: none">
             <p>Your browser does not support the video element.</p>
           </video>
+          <img id="img-stream" class="w-100">
         </div>
       </div>
 
@@ -79,13 +80,11 @@
 
         <div class="p-3 border bg-light text-center">
           <h5>DataChannel</h5>
-            <textarea id="datachannel-input" class="form-control" rows="8"></textarea>
+            <textarea id="datachannel-input" class="form-control" rows="12"></textarea>
         </div>
       </div>
     </div>
   </div>
-
-      <!--img id="img-stream" style="width: 100%"-->
 
 <script>
 
@@ -130,7 +129,7 @@ window.onload = function() {
   const img = new Image(640, 480)
   img.src = canvas.toDataURL()
 
-  //document.getElementById('img-stream').src = img.src;
+  document.getElementById('img-stream').src = img.src;
 }
 
 var offerId = Math.floor((Math.random() * 1000) + 1);
@@ -158,7 +157,7 @@ pc.ontrack = (e) => {
     el.autoplay = true
     el.controls = false
     el.muted = true
-    //document.getElementById("img-stream").style.display = "none";  
+    document.getElementById("img-stream").style.display = "none";
     document.getElementById("video-stream").style.display = "block";
 
   } else if (e.track.kind == "audio") {
