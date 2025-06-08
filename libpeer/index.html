@@ -245,7 +245,7 @@ client.on('connect', () => {
   client.subscribe(resultTopic, (err) => { })
 })
 
-document.getElementById("connect").addEventListener("click", () => {
+document.getElementById("connect").addEventListener("click", async () => {
 
   const cameraSwitch = document.getElementById("camera-switch");
   const microphoneSwitch = document.getElementById("microphone-switch");
@@ -255,7 +255,7 @@ document.getElementById("connect").addEventListener("click", () => {
   }
 
   if (constraints.video || constraints.audio) {
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+    await navigator.mediaDevices.getUserMedia(constraints).then(stream => {
       stream.getTracks().forEach(track => { console.log(track); pc.addTrack(track, stream)});
     }).catch((e) => {
       alert(e)
