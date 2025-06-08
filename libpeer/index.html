@@ -256,7 +256,7 @@ document.getElementById("connect").addEventListener("click", () => {
 
   if (constraints.video || constraints.audio) {
     navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      stream.getTracks().forEach(track => { console.log(track); pc.addTrack(track, stream)});
     }).catch((e) => {
       alert(e)
     });
