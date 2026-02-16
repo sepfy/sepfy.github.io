@@ -93,7 +93,7 @@ const urlParams = new URLSearchParams(queryString)
 const deviceId = urlParams.get("id")
 const resultTopic = "/public/" + deviceId + "/result"
 const invokeTopic = "/public/" + deviceId + "/invoke"
-const client  = mqtt.connect('wss://libpeer.com:8084/mqtt')
+const client  = mqtt.connect('wss://broker.emqx.io:8084/mqtt')
 
 function getRandomItem(array) {
   return array[Math.floor(Math.random() * array.length)];
@@ -117,7 +117,7 @@ window.onload = function() {
     window.location.href = window.location.href + "?id=" + randomId;
   } 
 
-  document.getElementById("device-url").innerHTML = "mqtts://libpeer.com/public/" + deviceId;
+  document.getElementById("device-url").innerHTML = "mqtts://broker.emqx.io/public/" + deviceId;
   const canvas = document.createElement('canvas')
   canvas.width = 640
   canvas.height = 480
